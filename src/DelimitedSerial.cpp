@@ -1,18 +1,16 @@
 #include "DelimitedSerial.h"
 
-DelimitedSerial::DelimitedSerial(void (*callback)(uint8_t*, uint16_t)) {
+DelimitedSerial::DelimitedSerial() {
   resetState();
-  msgReadyCallback = callback;
   currentState = DelimitedSerialState::Finished;
 }
 
 DelimitedSerial::~DelimitedSerial() {
   delete[] messageBuffer;
   messageBuffer = nullptr;
-  msgReadyCallback = nullptr;
 }
 
-void DelimitedSerial::update() {
+void DelimitedSerial::update(void (*callback)(uint8_t*, uint16_t, void*), void *callback_data) {
   // Check serial port
   if(Serial.available() > 0) {
     
@@ -33,7 +31,7 @@ void DelimitedSerial::update() {
       handleFinishReadSizeState(input);
     }
     else if (currentState == DelimitedSerialState::Processing) {
-      handleProcessingState(input);
+      handleProcessingState(input, callback, callback_data);
     }
   }
 }
@@ -70,7 +68,7 @@ void DelimitedSerial::handleFinishReadSizeState(uint8_t input) {
   currentState = DelimitedSerialState::Processing;
 }
 
-void DelimitedSerial::handleProcessingState(uint8_t input) {
+void DelimitedSerial::handleProcessingState(uint8_t input, void (*callback)(uint8_t*, uint16_t, void*), void *callback_data) {
   // Append byte
   if (messageLength < maxMessageLength) {
     messageBuffer[messageLength] = input + currentByte;
@@ -80,7 +78,7 @@ void DelimitedSerial::handleProcessingState(uint8_t input) {
   // Check if message is complete
   if (messageLength == maxMessageLength) {
     // Send message to callback function
-    if (msgReadyCallback) msgReadyCallback(messageBuffer, messageLength);
+    if (callback) callback(messageBuffer, messageLength, callback_data);
 
     // Reset state
     resetState();

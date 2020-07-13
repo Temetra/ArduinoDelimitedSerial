@@ -11,12 +11,12 @@ enum class DelimitedSerialState { StartReadSize, FinishReadSize, Processing, Fin
 class DelimitedSerial {
   public:
     // Callback takes pointer to message buffer, and length of message
-    DelimitedSerial(void (*callback)(uint8_t*, uint16_t));
+    DelimitedSerial();
     ~DelimitedSerial();
   
     // Processes a single byte
     // Sends buffer to callback function when message is complete
-    void update();
+    void update(void (*callback)(uint8_t*, uint16_t, void*), void *callback_data);
 
   private:
     // Values of delimiting bytes
@@ -38,16 +38,13 @@ class DelimitedSerial {
     // Current state of message processing
     DelimitedSerialState currentState;
 
-    // Pointer to callback to send complete message to
-    void (*msgReadyCallback)(uint8_t*, uint16_t);
-
     // Member functions
     void resetState();
     void handleStartMarkerState();
     void handleSplitMarkerState();
     void handleStartReadSizeState(uint8_t input);
     void handleFinishReadSizeState(uint8_t input);
-    void handleProcessingState(uint8_t input);
+    void handleProcessingState(uint8_t input, void (*callback)(uint8_t*, uint16_t, void*), void *callback_data);
 };
 
 #endif
